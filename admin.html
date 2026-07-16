@@ -3,21 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bảng Điều Khiển Giảng Viên - Quản Trị Khảo Sát</title>
+    <title>Bảng Điều Khiển Giảng Viên - Quản Lý Lớp Học</title>
     
-    <!-- Nhúng thư viện Firebase SDK v8 chính thức -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    
-    <!-- Nhúng thư viện tạo mã QR tự động -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         :root { --primary: #1a252f; --accent: #27ae60; --danger: #e74c3c; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, sans-serif; background: #f4f6f7; color: #333; padding: 20px; }
-        .box { max-width: 600px; margin: 40px auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .box { max-width: 650px; margin: 20px auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1, h2 { text-align: center; margin-bottom: 20px; color: var(--primary); text-transform: uppercase; font-size: 20px; }
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
@@ -28,12 +25,21 @@
         .toggle-area { display: flex; align-items: center; gap: 10px; margin: 15px 0; background: #fdfefe; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; }
         #adminPanel { display: none; }
         #qrcode { margin: 20px auto; display: flex; justify-content: center; }
-        .qr-links { text-align: center; margin-top: 10px; font-size: 14px; }
+        .qr-links { text-align: center; margin-top: 10px; font-size: 14px; word-break: break-all; }
+        
+        /* Giao diện danh sách lớp */
+        .class-list { margin-top: 25px; border-top: 2px dashed #ccc; padding-top: 20px; }
+        .class-item { background: #f9f9f9; padding: 12px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .class-info h4 { color: var(--primary); font-size: 15px; }
+        .class-info p { font-size: 12px; color: #666; }
+        .action-btns { display: flex; gap: 8px; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; font-weight: bold; border: none; border-radius: 3px; cursor: pointer; color: #fff; }
+        .btn-edit { background: #3498db; }
     </style>
 </head>
 <body>
 
-    <!-- KHỐI ĐĂNG NHẬP BẢO MẬT -->
+    <!-- KHỐI ĐĂNG NHẬP -->
     <div id="loginPanel" class="box">
         <h1>Đăng Nhập Quản Trị Hệ Thống</h1>
         <div class="form-group">
@@ -47,35 +53,53 @@
         <button class="btn btn-primary" onclick="loginAdmin()">ĐĂNG NHẬP HỆ THỐNG</button>
     </div>
 
-    <!-- BẢNG ĐIỀU KHIỂN GIẢNG VIÊN -->
+    <!-- BẢNG ĐIỀU KHIỂN -->
     <div id="adminPanel" class="box">
-        <h2>Cấu Hình Biểu Mẫu Khảo Sát</h2>
+        <h2>Cấu Hình Mã QR Lớp Học Mới</h2>
         
         <div class="form-group">
-            <label>Đường dẫn Google Form hiện tại</label>
+            <label>Mã định danh lớp (Viết liền không dấu, ví dụ: VSIP2026, HEPC_01)</label>
+            <input type="text" id="classId" placeholder="Ví dụ: LOP_DIEN_01">
+        </div>
+
+        <div class="form-group">
+            <label>Tên hiển thị lớp học</label>
+            <input type="text" id="className" placeholder="Ví dụ: Lớp An Toàn Điện VSIP 2026">
+        </div>
+
+        <div class="form-group">
+            <label>Đường dẫn Google Form khảo sát của lớp này</label>
             <input type="text" id="ggFormUrl" placeholder="https://docs.google.com/forms/...">
         </div>
 
         <div class="toggle-area">
             <input type="checkbox" id="secureMode" style="width: 20px; height: 20px; cursor: pointer;">
             <label for="secureMode" style="margin-bottom: 0; cursor: pointer; color: var(--danger); font-weight: bold;">
-                Kích hoạt chế độ bảo mật (Ẩn thông tin khi có trợ giảng đối thủ)
+                Kích hoạt chế độ bảo mật né trợ giảng đối thủ cho lớp này
             </label>
         </div>
 
-        <button class="btn btn-success" onclick="updateConfig()">CẬP NHẬT CẤU HÌNH HỆ THỐNG</button>
+        <button class="btn btn-success" onclick="saveClassConfig()">LƯU & TẠO MÃ QR LỚP HỌC</button>
         
-        <hr style="margin: 25px 0; border: 0; border-top: 1px solid #eee;">
-        
-        <h2>Mã QR Tra Cứu Lớp Học</h2>
-        <div id="qrcode"></div>
-        <div class="qr-links">
-            <p>Link hệ thống ẩn danh: <a id="linkFree" href="#" target="_blank">Đang khởi tạo...</a></p>
+        <!-- KHU VỰC HIỂN THỊ QR KHI VỪA CẬP NHẬT -->
+        <div id="qrResultArea" style="display:none; border: 1px solid var(--accent); padding: 15px; margin-top: 20px; border-radius: 4px; background: #f4fff7;">
+            <h3 style="text-align:center; font-size:16px; color:var(--accent);">MÃ QR VỪA KHỞI TẠO ĐÃ SẴN SÀNG</h3>
+            <div id="qrcode"></div>
+            <div class="qr-links">
+                <p>Link quét QR lớp học: <a id="linkFree" href="#" target="_blank"></a></p>
+            </div>
+        </div>
+
+        <!-- DANH SÁCH CÁC LỚP ĐÃ TẠO LƯU TRÊN DATABASE -->
+        <div class="class-list">
+            <h2>Danh Sách Mã QR Các Lớp Đang Hoạt Động</h2>
+            <div id="classListContainer">
+                <p style="text-align:center; color:#999;">Đang tải danh sách lớp...</p>
+            </div>
         </div>
     </div>
 
     <script>
-        // Cấu hình Firebase chính thức
         const firebaseConfig = {
             apiKey: "AIzaSyCkBRre5ajocg0EIuOchb6QknsdL6Qq9FA",
             authDomain: "theantoan-fea9e.firebaseapp.com",
@@ -90,53 +114,91 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const database = firebase.database();
-        let qr = new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 });
+        let qrContainer = document.getElementById("qrcode");
+        let qr = new QRCode(qrContainer, { width: 180, height: 180 });
 
         function loginAdmin() {
             const email = document.getElementById('adminEmail').value;
             const pass = document.getElementById('adminPassword').value;
-
             auth.signInWithEmailAndPassword(email, pass)
                 .then(() => {
                     document.getElementById('loginPanel').style.display = 'none';
                     document.getElementById('adminPanel').style.display = 'block';
-                    loadCurrentConfig();
+                    listenClassList();
                 })
-                .catch((error) => {
-                    alert("Sai tài khoản hoặc mật khẩu quản trị!");
-                    console.error(error);
-                });
+                .catch((error) => { alert("Sai tài khoản hoặc mật khẩu!"); console.error(error); });
         }
 
-        function loadCurrentConfig() {
-            database.ref('surveyConfig').once('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    document.getElementById('ggFormUrl').value = data.formUrl || '';
-                    document.getElementById('secureMode').checked = data.isSecure || false;
-                }
-                generateQRs();
-            });
-        }
+        // Lưu hoặc sửa cấu hình lớp học theo mã định danh duy nhất (classId)
+        function saveClassConfig() {
+            const classId = document.getElementById('classId').value.trim().replace(/[^a-zA-Z0-String0-9_]/g, "");
+            const className = document.getElementById('className').value.trim();
+            const formUrl = document.getElementById('ggFormUrl').value.trim();
+            const isSecure = document.getElementById('secureMode').checked;
 
-        function updateConfig() {
-            const url = document.getElementById('ggFormUrl').value;
-            const secure = document.getElementById('secureMode').checked;
+            if(!classId || !className || !formUrl) {
+                alert("Vui lòng điền đầy đủ: Mã lớp, Tên lớp và Link Google Form!");
+                return;
+            }
 
-            database.ref('surveyConfig').set({
-                formUrl: url,
-                isSecure: secure
+            database.ref('classes/' + classId).set({
+                classId: classId,
+                className: className,
+                formUrl: formUrl,
+                isSecure: isSecure
             }).then(() => {
-                alert("Hệ thống đã cập nhật dữ liệu thành công!");
-                generateQRs();
-            }).catch((err) => {
-                alert("Lỗi kết nối cơ sở dữ liệu: " + err.message);
+                alert("Đã lưu lớp học thành công vào hệ thống!");
+                showGeneratedQR(classId);
+                // Reset form nhập liệu
+                document.getElementById('classId').value = '';
+                document.getElementById('className').value = '';
+                document.getElementById('ggFormUrl').value = '';
+                document.getElementById('secureMode').checked = false;
+            }).catch((err) => { alert("Lỗi ghi DB: " + err.message); });
+        }
+
+        // Đồng bộ hiển thị danh sách lớp thực tế từ Firebase
+        function listenClassList() {
+            database.ref('classes').on('value', (snapshot) => {
+                const container = document.getElementById('classListContainer');
+                container.innerHTML = '';
+                const data = snapshot.val();
+                
+                if(!data) {
+                    container.innerHTML = '<p style="text-align:center; color:#999;">Chưa có lớp học nào được tạo.</p>';
+                    return;
+                }
+
+                Object.keys(data).forEach((key) => {
+                    const item = data[key];
+                    const div = document.createElement('div');
+                    div.className = 'class-item';
+                    div.innerHTML = `
+                        <div class="class-info">
+                            <h4>${item.className} (Mã: ${item.classId})</h4>
+                            <p>Chế độ bảo mật: <span style="color:${item.isSecure?'red':'green'}; font-weight:bold;">${item.isSecure?'ĐANG BẬT':'TẮT'}</span></p>
+                        </div>
+                        <div class="action-btns">
+                            <button class="btn-sm btn-edit" onclick="loadClassToForm('${item.classId}', '${item.className.replace(/'/g, "\\'")}', '${item.formUrl}', ${item.isSecure})">Xem QR / Sửa</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
             });
         }
 
-        function generateQRs() {
-            // Cấu hình chính xác đường dẫn của Repo ẩn danh mới để sinh mã QR
-            const secureLink = "https://trancongdep.github.io/thantoan-khao-sat/";
+        // Đẩy ngược thông tin lớp cũ lên form nhập liệu để sửa hoặc xem lại mã QR
+        function loadClassToForm(id, name, url, secure) {
+            document.getElementById('classId').value = id;
+            document.getElementById('className').value = name;
+            document.getElementById('ggFormUrl').value = url;
+            document.getElementById('secureMode').checked = secure;
+            showGeneratedQR(id);
+        }
+
+        function showGeneratedQR(id) {
+            const secureLink = `https://trancongdep.github.io/thantoan-khao-sat/?lop=${id}`;
+            document.getElementById('qrResultArea').style.display = 'block';
             document.getElementById('linkFree').href = secureLink;
             document.getElementById('linkFree').innerText = secureLink;
             qr.makeCode(secureLink);
