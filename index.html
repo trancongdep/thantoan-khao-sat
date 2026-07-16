@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Khảo Sát Chất Lượng Khóa Huấn Luyện An Toàn</title>
     
-    <!-- Nhúng Firebase App và Database chính thức từ CDN tĩnh -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    <!-- Nhúng mã Google Analytics chung với hệ thống theantoan.vn phục vụ Cross-Domain Tracking -->
+    <!-- Google Analytics (GA4) Cross-Domain Tracking -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-G5R89QH44C"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -23,7 +22,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, sans-serif; background-color: #f4f6f7; color: var(--text); padding: 20px 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
         
-        /* THANH ĐIỀU HƯỚNG KÉO TRAFFIC SEO VỀ WEBSITE CHÍNH */
         #normalHeader { width: 100%; max-width: 500px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; }
         #normalHeader a { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 14px; }
 
@@ -42,28 +40,26 @@
 </head>
 <body>
 
-    <!-- Khối liên kết kéo traffic về domain chính (Sẽ tự động biến mất khi bật chế độ bảo mật) -->
     <div id="normalHeader">
         <a href="https://theantoan.vn/">&larr; Về Trang Chủ Website</a>
         <a href="https://theantoan.vn/huan-luyen-an-toan/">Dịch vụ huấn luyện</a>
     </div>
 
     <div class="survey-wrapper">
-        <!-- Tên thương hiệu mặc định an toàn cho repo ẩn danh -->
         <div class="logo-brand" id="brandName">HỆ THỐNG KHẢO SÁT LỚP HỌC</div>
-        <h1>Khai Báo Thông Tin & Khảo Sát Chất Lượng</h1>
+        <h1 id="classTitleDisplay">Khai Báo Thông Tin & Khảo Sát Chất Lượng</h1>
         
         <div class="instructions">
             <h2>Hướng dẫn thực hiện:</h2>
             <ol>
-                <li>Bấm vào nút <strong>"Bắt đầu khai báo"</strong> màu xanh phía dưới để chuyển hướng sang biểu mẫu của lớp học[cite: 1].</li>
-                <li>Hoàn thành đầy đủ các thông tin cá nhân bắt buộc yêu cầu[cite: 1].</li>
+                <li>Bấm vào nút <strong>"Bắt đầu khai báo"</strong> màu xanh phía dưới để chuyển hướng sang biểu mẫu của lớp học.</li>
+                <li>Hoàn thành đầy đủ các thông tin cá nhân bắt buộc yêu cầu.</li>
                 <li>Trả lời các tiêu chí đánh giá chất lượng giảng dạy và nhấn gửi.</li>
             </ol>
         </div>
 
         <div id="actionArea">
-            <span class="loading-text">Đang đồng bộ dữ liệu lớp học...</span>
+            <span class="loading-text">Đang nhận diện dữ liệu mã lớp...</span>
         </div>
 
         <footer id="footerText">
@@ -86,27 +82,34 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        database.ref('surveyConfig').on('value', (snapshot) => {
-            const data = snapshot.val();
-            const actionArea = document.getElementById('actionArea');
-            
-            if (data && data.formUrl) {
-                // target="_blank" mở biểu mẫu khảo sát ở tab mới, giữ tab github chạy ngầm để tích lũy Dwell Time
-                actionArea.innerHTML = `<a href="${data.formUrl}" target="_blank" class="btn-link">BẮT ĐẦU KHAI BÁO &rarr;</a>`;
+        // Đoán tìm mã tham số lớp ẩn danh trên URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentClassId = urlParams.get('lop');
+
+        if(currentClassId) {
+            // Chỉ truy xuất và nghe dữ liệu duy nhất của lớp này
+            database.ref('classes/' + currentClassId).on('value', (snapshot) => {
+                const data = snapshot.val();
+                const actionArea = document.getElementById('actionArea');
                 
-                if (data.isSecure === true) {
-                    // CÓ TRỢ GIẢNG ĐỐI THỦ: Cắt đứt hoàn toàn ngả đường liên kết dẫn về theantoan.vn
-                    document.getElementById('normalHeader').style.setProperty('display', 'none', 'important');
-                    document.getElementById('brandName').innerText = "HỆ THỐNG KHẢO SÁT LỚP HỌC";
+                if (data && data.formUrl) {
+                    actionArea.innerHTML = `<a href="${data.formUrl}" target="_blank" class="btn-link">BẮT ĐẦU KHAI BÁO &rarr;</a>`;
+                    document.getElementById('classTitleDisplay').innerText = data.className;
+                    
+                    if (data.isSecure === true) {
+                        document.getElementById('normalHeader').style.setProperty('display', 'none', 'important');
+                        document.getElementById('brandName').innerText = "HỆ THỐNG KHẢO SÁT LỚP HỌC";
+                    } else {
+                        document.getElementById('normalHeader').style.display = 'flex';
+                        document.getElementById('brandName').innerText = "THEANTOAN.VN";
+                    }
                 } else {
-                    // KHÔNG CÓ TRỢ GIẢNG: Hiển thị lại thanh điều hướng để kéo dòng chảy traffic SEO về website chính
-                    document.getElementById('normalHeader').style.display = 'flex';
-                    document.getElementById('brandName').innerText = "THEANTOAN.VN";
+                    actionArea.innerHTML = `<span class="loading-text" style="color:red;">Mã lớp không tồn tại hoặc link khảo sát đã bị hủy!</span>`;
                 }
-            } else {
-                actionArea.innerHTML = `<span class="loading-text" style="color:red;">Lớp học hiện tại chưa được giảng viên mở cấu hình link biểu mẫu!</span>`;
-            }
-        });
+            });
+        } else {
+            document.getElementById('actionArea').innerHTML = `<span class="loading-text" style="color:red;">Lỗi: Không tìm thấy tham số mã hóa lớp học trên thiết bị!</span>`;
+        }
     </script>
 </body>
 </html>
