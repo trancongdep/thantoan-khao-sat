@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khai Báo Thông Tin Điểm Danh</title>
+
+    <!-- NHÚNG MÃ GOOGLE ANALYTICS (GA4) ĐỂ THU GOM TRAFFIC GỘP VỀ THEANTOAN.VN -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-G5R89QH44C"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-G5R89QH44C');
+    </script>
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #eef2f5; padding: 15px; color: #333; }
+        .card { max-width: 480px; margin: 10px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        h2 { text-align: center; margin-bottom: 20px; color: #1a252f; font-size: 18px; text-transform: uppercase; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; }
+        
+        /* Hộp hiển thị Camera */
+        .camera-box { width: 100%; background: #000; border-radius: 6px; overflow: hidden; position: relative; margin-bottom: 15px; aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; }
+        video, canvas { width: 100%; height: 100%; object-fit: cover; }
+        #capturedImage { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; color: #fff; }
+        .btn-capture { background: #3498db; }
+        .btn-submit { background: #27ae60; display: none; }
+        #loading { display: none; text-align: center; font-weight: bold; color: #e67e22; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2 id="classTitle">Khai Báo Điểm Danh Học Viên</h2>
+        
+        <div class="camera-box">
+            <video id="video" autoplay playsinline></video>
+            <img id="capturedImage" alt="Ảnh chụp điểm danh">
+            <canvas id="canvas" style="display:none;"></canvas>
+        </div>
+        
+        <button type="button" class="btn btn-capture" onclick="takeSnapshot()">BẤM VÀO ĐÂY ĐỂ CHỤP HÌNH</button>
+
+        <div class="form-group" style="margin-top: 15px;">
+            <label>Họ và tên học viên</label>
+            <input type="text" id="fullName" placeholder="Nguyễn Văn A">
+        </div>
+        <div class="form-group">
+            <label>Năm sinh</label>
+            <input type="number" id="birthYear" placeholder="1990">
+        </div>
+        <div class="form-group">
+            <label>Đơn vị / Công ty tác nghiệp</label>
+            <input type="text" id="company" placeholder="Công ty TNHH VDC">
+        </div>
+
+        <button type="button" class="btn btn-submit" id="submitBtn" onclick="submitAttendance()">XÁC NHẬN ĐIỂM DANH GỬI HỆ THỐNG</button>
+        <div id="loading">Đang tải ảnh và đồng bộ dữ liệu về Google Sheets...</div>
+    </div>
+
+    <script>
+        // Cấu hình URL Web App Google Apps Script của anh sau khi deploy
+        const SCRIPT_URL = "ĐIỀN_URL_WEB_APP_GOOGLE_APPS_SCRIPT_CỦA_ANH_VÀO_ĐÂY";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const classId = urlParams.get('lop');
+        
+        let video = document.getElementById('video');
+        let imageDataUrl = "";
+
+        // Tự động xin quyền kích hoạt Camera trước mặt của thiết bị di động
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => { alert("Vui lòng cho phép quyền truy cập Camera để tiến hành điểm danh!"); });
+
+        function takeSnapshot() {
+            let canvas = document.getElementById('canvas');
+            let ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            document.getElementById('capturedImage').src = imageDataUrl;
+            document.getElementById('capturedImage').style.display = 'block';
+            video.style.display = 'none';
+            
+            document.querySelector('.btn-capture').innerText = "CHỤP LẠI ẢNH MỚI";
+            document.getElementById('submitBtn').style.display = 'block';
+        }
+
+        function submitAttendance() {
+            const fullName = document.getElementById('fullName').value.trim();
+            const birthYear = document.getElementById('birthYear').value.trim();
+            const company = document.getElementById('company').value.trim();
+
+            if(!imageDataUrl) { alert("Bạn phải thực hiện chụp ảnh khuôn mặt trước!"); return; }
+            if(!fullName || !birthYear || !company) { alert("Vui lòng điền đầy đủ thông tin cá nhân!"); return; }
+
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+
+            const payload = {
+                classId: classId || "UNKNW",
+                fullName: fullName,
+                birthYear: birthYear,
+                company: company,
+                image: imageDataUrl
+            };
+
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                alert("Điểm danh thành công! Cảm ơn bạn.");
+                window.location.reload();
+            }).catch(err => {
+                alert("Lỗi kết nối: " + err.message);
+                document.getElementById('submitBtn').style.display = 'block';
+                document.getElementById('loading').style.display = 'none';
+            });
+        }
+    </script>
+</body>
+</html>
