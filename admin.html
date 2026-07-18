@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bảng Điều Khiển Giảng Viên - Quản Lý Lớp Học</title>
+    <title>Bảng Điều Khiển Giảng Viên - Quản Lý Lớp Học & Bảo Mật</title>
     
+    <!-- Nhúng thư viện Firebase SDK v8 chính thức -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <!-- Nhúng thư viện tạo mã QR tự động -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
-        :root { --primary: #1a252f; --accent: #27ae60; --danger: #e74c3c; }
+        :root { --primary: #1a252f; --accent: #27ae60; --danger: #e74c3c; --info: #3498db; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, sans-serif; background: #f4f6f7; color: #333; padding: 20px; }
         .box { max-width: 650px; margin: 20px auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -34,12 +37,13 @@
         .class-info p { font-size: 12px; color: #666; }
         .action-btns { display: flex; gap: 8px; }
         .btn-sm { padding: 6px 12px; font-size: 12px; font-weight: bold; border: none; border-radius: 3px; cursor: pointer; color: #fff; }
-        .btn-edit { background: #3498db; }
+        .btn-edit { background: var(--info); }
+        .btn-attendance { background: #9b59b6; }
     </style>
 </head>
 <body>
 
-    <!-- KHỐI ĐĂNG NHẬP -->
+    <!-- KHỐI ĐĂNG NHẬP BẢO MẬT -->
     <div id="loginPanel" class="box">
         <h1>Đăng Nhập Quản Trị Hệ Thống</h1>
         <div class="form-group">
@@ -53,7 +57,7 @@
         <button class="btn btn-primary" onclick="loginAdmin()">ĐĂNG NHẬP HỆ THỐNG</button>
     </div>
 
-    <!-- BẢNG ĐIỀU KHIỂN -->
+    <!-- BẢNG ĐIỀU KHIỂN CỦA GIẢNG VIÊN -->
     <div id="adminPanel" class="box">
         <h2>Cấu Hình Mã QR Lớp Học Mới</h2>
         
@@ -81,25 +85,26 @@
 
         <button class="btn btn-success" onclick="saveClassConfig()">LƯU & TẠO MÃ QR LỚP HỌC</button>
         
-        <!-- KHU VỰC HIỂN THỊ QR KHI VỪA CẬP NHẬT -->
+        <!-- KHU VỰC HIỂN THỊ MÃ QR KHI VỪA CẬP NHẬT HOẶC XEM LẠI -->
         <div id="qrResultArea" style="display:none; border: 1px solid var(--accent); padding: 15px; margin-top: 20px; border-radius: 4px; background: #f4fff7;">
-            <h3 style="text-align:center; font-size:16px; color:var(--accent);">MÃ QR VỪA KHỞI TẠO ĐÃ SẴN SÀNG</h3>
+            <h3 style="text-align:center; font-size:16px; color:var(--accent);">MÃ QR KHẢO SÁT LỚP HỌC</h3>
             <div id="qrcode"></div>
             <div class="qr-links">
                 <p>Link quét QR lớp học: <a id="linkFree" href="#" target="_blank"></a></p>
             </div>
         </div>
 
-        <!-- DANH SÁCH CÁC LỚP ĐÃ TẠO LƯU TRÊN DATABASE -->
+        <!-- DANH SÁCH CÁC LỚP ĐÃ TẠO ĐƯỢC LƯU TRÊN REALTIME DATABASE -->
         <div class="class-list">
             <h2>Danh Sách Mã QR Các Lớp Đang Hoạt Động</h2>
             <div id="classListContainer">
-                <p style="text-align:center; color:#999;">Đang tải danh sách lớp...</p>
+                <p style="text-align:center; color:#999;">Đang tải danh sách lớp từ cơ sở dữ liệu...</p>
             </div>
         </div>
     </div>
 
     <script>
+        // Cấu hình kết nối Firebase Realtime Database
         const firebaseConfig = {
             apiKey: "AIzaSyCkBRre5ajocg0EIuOchb6QknsdL6Qq9FA",
             authDomain: "theantoan-fea9e.firebaseapp.com",
@@ -117,21 +122,31 @@
         let qrContainer = document.getElementById("qrcode");
         let qr = new QRCode(qrContainer, { width: 180, height: 180 });
 
+        // Xử lý đăng nhập thông qua Firebase Auth
         function loginAdmin() {
-            const email = document.getElementById('adminEmail').value;
-            const pass = document.getElementById('adminPassword').value;
+            const email = document.getElementById('adminEmail').value.trim();
+            const pass = document.getElementById('adminPassword').value.trim();
+            
+            if(!email || !pass) {
+                alert("Vui lòng điền tài khoản và mật khẩu!");
+                return;
+            }
+
             auth.signInWithEmailAndPassword(email, pass)
                 .then(() => {
                     document.getElementById('loginPanel').style.display = 'none';
                     document.getElementById('adminPanel').style.display = 'block';
                     listenClassList();
                 })
-                .catch((error) => { alert("Sai tài khoản hoặc mật khẩu!"); console.error(error); });
+                .catch((error) => { 
+                    alert("Sai tài khoản hoặc mật khẩu quản trị!"); 
+                    console.error(error); 
+                });
         }
 
-        // Lưu hoặc sửa cấu hình lớp học theo mã định danh duy nhất (classId)
+        // Lưu dữ liệu lớp học mới hoặc chỉnh sửa dữ liệu lớp cũ dựa vào mã định danh duy nhất (classId)
         function saveClassConfig() {
-            const classId = document.getElementById('classId').value.trim().replace(/[^a-zA-Z0-String0-9_]/g, "");
+            const classId = document.getElementById('classId').value.trim().replace(/[^a-zA-Z0-9_]/g, "");
             const className = document.getElementById('className').value.trim();
             const formUrl = document.getElementById('ggFormUrl').value.trim();
             const isSecure = document.getElementById('secureMode').checked;
@@ -147,17 +162,20 @@
                 formUrl: formUrl,
                 isSecure: isSecure
             }).then(() => {
-                alert("Đã lưu lớp học thành công vào hệ thống!");
+                alert("Hệ thống đã cập nhật thông tin lớp thành công!");
                 showGeneratedQR(classId);
-                // Reset form nhập liệu
+                
+                // Đặt lại giá trị trống cho các trường nhập liệu sau khi lưu
                 document.getElementById('classId').value = '';
                 document.getElementById('className').value = '';
                 document.getElementById('ggFormUrl').value = '';
                 document.getElementById('secureMode').checked = false;
-            }).catch((err) => { alert("Lỗi ghi DB: " + err.message); });
+            }).catch((err) => { 
+                alert("Lỗi ghi cơ sở dữ liệu: " + err.message); 
+            });
         }
 
-        // Đồng bộ hiển thị danh sách lớp thực tế từ Firebase
+        // Lắng nghe liên tục sự thay đổi dữ liệu từ nhánh 'classes' trên Firebase và hiển thị danh sách lớp
         function listenClassList() {
             database.ref('classes').on('value', (snapshot) => {
                 const container = document.getElementById('classListContainer');
@@ -165,7 +183,7 @@
                 const data = snapshot.val();
                 
                 if(!data) {
-                    container.innerHTML = '<p style="text-align:center; color:#999;">Chưa có lớp học nào được tạo.</p>';
+                    container.innerHTML = '<p style="text-align:center; color:#999;">Chưa có dữ liệu lớp học nào được tạo trên hệ thống.</p>';
                     return;
                 }
 
@@ -173,13 +191,19 @@
                     const item = data[key];
                     const div = document.createElement('div');
                     div.className = 'class-item';
+                    
+                    // Xử lý chuỗi an toàn khi truyền tham số vào hàm Javascript inline
+                    const safeName = item.className.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    const safeUrl = item.formUrl.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    
                     div.innerHTML = `
                         <div class="class-info">
                             <h4>${item.className} (Mã: ${item.classId})</h4>
-                            <p>Chế độ bảo mật: <span style="color:${item.isSecure?'red':'green'}; font-weight:bold;">${item.isSecure?'ĐANG BẬT':'TẮT'}</span></p>
+                            <p>Bảo mật đối thủ: <span style="color:${item.isSecure?'red':'green'}; font-weight:bold;">${item.isSecure?'ĐANG BẬT':'TẮT'}</span></p>
                         </div>
                         <div class="action-btns">
-                            <button class="btn-sm btn-edit" onclick="loadClassToForm('${item.classId}', '${item.className.replace(/'/g, "\\'")}', '${item.formUrl}', ${item.isSecure})">Xem QR / Sửa</button>
+                            <button class="btn-sm btn-edit" onclick="loadClassToForm('${item.classId}', '${safeName}', '${safeUrl}', ${item.isSecure})">Xem QR / Sửa</button>
+                            <button class="btn-sm btn-attendance" onclick="window.open('diemdanh.html?lop=${item.classId}', '_blank')">Mở Điểm Danh</button>
                         </div>
                     `;
                     container.appendChild(div);
@@ -187,7 +211,7 @@
             });
         }
 
-        // Đẩy ngược thông tin lớp cũ lên form nhập liệu để sửa hoặc xem lại mã QR
+        // Đẩy thông tin của một lớp cũ ngược lại các ô nhập liệu để tiến hành sửa đổi dữ liệu hoặc lấy lại mã QR
         function loadClassToForm(id, name, url, secure) {
             document.getElementById('classId').value = id;
             document.getElementById('className').value = name;
@@ -196,6 +220,7 @@
             showGeneratedQR(id);
         }
 
+        // Tạo mã QR ẩn danh hướng về file index.html kèm tham số nhận diện lớp
         function showGeneratedQR(id) {
             const secureLink = `https://trancongdep.github.io/thantoan-khao-sat/?lop=${id}`;
             document.getElementById('qrResultArea').style.display = 'block';
