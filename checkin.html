@@ -23,7 +23,6 @@
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; }
         
-        /* Hộp hiển thị Camera */
         .camera-box { width: 100%; background: #000; border-radius: 6px; overflow: hidden; position: relative; margin-bottom: 15px; aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; }
         video, canvas { width: 100%; height: 100%; object-fit: cover; }
         #capturedImage { width: 100%; height: 100%; object-fit: cover; display: none; }
@@ -64,7 +63,7 @@
     </div>
 
     <script>
-        // Cấu hình URL Web App Google Apps Script của anh sau khi deploy
+        // Dán chính xác liên kết Web App Google Apps Script của anh Đẹp vào đây
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKU_pX3zrrM3PzsQXOW_eHk39ELsXmFQP1O_cdMymxgJgbUxQvAQtiksxXgvOpKXNmnQ/exec";
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -73,7 +72,7 @@
         let video = document.getElementById('video');
         let imageDataUrl = "";
 
-        // Tự động xin quyền kích hoạt Camera trước mặt của thiết bị di động
+        // Tự động kích hoạt luồng camera trước
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
             .then(stream => { video.srcObject = stream; })
             .catch(err => { alert("Vui lòng cho phép quyền truy cập Camera để tiến hành điểm danh!"); });
@@ -85,7 +84,7 @@
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            imageDataUrl = canvas.toDataURL('image/jpeg', 0.6); // Hạ chất lượng xuống 0.6 để base64 nhẹ hơn, truyền tải nhanh hơn
             document.getElementById('capturedImage').src = imageDataUrl;
             document.getElementById('capturedImage').style.display = 'block';
             video.style.display = 'none';
@@ -113,19 +112,31 @@
                 image: imageDataUrl
             };
 
-            fetch(SCRIPT_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            }).then(() => {
-                alert("Điểm danh thành công! Cảm ơn bạn.");
-                window.location.reload();
-            }).catch(err => {
-                alert("Lỗi kết nối: " + err.message);
-                document.getElementById('submitBtn').style.display = 'block';
-                document.getElementById('loading').style.display = 'none';
-            });
+            // SỬ DỤNG PHƯƠNG PHÁP SEND-BEACON TỰ CHUYỂN ĐỔI FORM ĐỂ NÉ CORS HOÀN TOÀN
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = SCRIPT_URL;
+            form.style.display = 'none';
+
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'postData'; // Đóng gói dữ liệu dạng chuỗi thô để Apps Script bóc tách sạch sẽ
+            input.value = JSON.stringify(payload);
+            
+            form.appendChild(input);
+            document.body.appendChild(form);
+            
+            // Thực hiện submit bất đồng bộ
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", SCRIPT_URL, true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    alert("Điểm danh thành công! Cảm ơn bạn.");
+                    window.location.reload();
+                }
+            };
+            xhr.send("postData=" + encodeURIComponent(JSON.stringify(payload)));
         }
     </script>
 </body>
