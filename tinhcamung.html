@@ -3,171 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công Cụ Tính Toán Cảm Ứng Điện Từ</title>
+    <title>Công Cụ Tính Toán Cảm Ứng Điện Từ - Cập Nhật An Toàn</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f9;
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        select, input[type="number"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box; /* Đảm bảo padding không làm tăng chiều rộng tổng */
-        }
-        .hidden {
-            display: none;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        #result {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #e9ecef;
-            border-radius: 4px;
-        }
-        .result-item {
-            margin-bottom: 10px;
-        }
-        .result-label {
-            font-weight: bold;
-            color: #555;
-        }
-        .warning {
-            color: red;
-            font-weight: bold;
-        }
-        .safe {
-            color: green;
-            font-weight: bold;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+        h1 { text-align: center; color: #0056b3; }
+        .container { max-width: 700px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 18px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        label { display: block; font-weight: bold; margin-bottom: 7px; color: #555; }
+        .help-text { font-size: 0.85em; color: #777; margin-top: -3px; margin-bottom: 7px; display: block; }
+        select, input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 1em; }
+        .radio-group { display: flex; gap: 15px; margin-top: 5px; }
+        .radio-group label { font-weight: normal; display: flex; align-items: center; cursor: pointer; }
+        .radio-group input { margin-right: 5px; }
+        .hidden { display: none; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: #0056b3; }
+        #result { margin-top: 25px; padding: 20px; background-color: #e9ecef; border-radius: 5px; border-left: 5px solid #007bff; }
+        .result-title { text-align: center; margin-top: 0; color: #0056b3; }
+        .result-item { margin-bottom: 15px; }
+        .result-label { font-weight: bold; color: #444; }
+        .warning-box { background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 10px; border-radius: 5px; margin-top: 5px; }
+        .warning-text { color: #dc3545; font-weight: bold; }
+        .safe-text { color: #28a745; font-weight: bold; }
+        .distance-guide { font-size: 0.9em; background-color: #f8f9fa; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-top: 5px; }
+        .distance-guide ul { margin: 5px 0 0 20px; padding: 0; }
     </style>
 </head>
 <body>
 
-    <h1>Tính Toán Cảm Ứng Điện Từ Tạm Tính</h1>
+    <h1>Tính Toán Cảm Ứng Điện Từ</h1>
+    <p style="text-align:center; max-width:600px; margin: 0 auto 20px auto;">Công cụ tạm tính điện áp cảm ứng (Tĩnh điện và Từ thế) giữa hai đường dây song song, tích hợp các quy định an toàn về khoảng cách và loại vỏ cách điện.</p>
     
     <div class="container">
         <form id="calcForm">
             <!-- 1. Cấp điện áp nguồn -->
             <div class="form-group">
                 <label for="voltage_source">Cấp điện áp nguồn (Dây 1 - kV)</label>
-                <select id="voltage_source" name="voltage_source" onchange="toggleCustomVoltage()" required>
+                <select id="voltage_source" name="voltage_source" onchange="toggleCustomVoltage(); updateDistanceGuide();" required>
                     <option value="" disabled selected>Chọn cấp điện áp...</option>
-                    <option value="0.22">220V</option>
-                    <option value="22">22kV</option>
-                    <option value="35">35kV</option>
-                    <option value="110">110kV</option>
-                    <option value="220">220kV</option>
-                    <option value="500">500kV</option>
+                    <option value="0.22">220V (Hạ thế)</option>
+                    <option value="22">22kV (Trung thế)</option>
+                    <option value="35">35kV (Trung thế)</option>
+                    <option value="110">110kV (Cao thế)</option>
+                    <option value="220">220kV (Cao thế)</option>
+                    <option value="500">500kV (Siêu cao thế)</option>
                     <option value="custom">Nhập số tùy chọn...</option>
                 </select>
-                <!-- Nhập số tùy chọn cho Điện áp -->
-                <input type="number" id="custom_voltage" name="custom_voltage" step="0.01" min="0" placeholder="Nhập kV..." class="hidden" style="margin-top:5px;">
+                <input type="number" id="custom_voltage" name="custom_voltage" step="0.1" min="0.1" placeholder="Nhập kV... (ví dụ 10)" class="hidden" style="margin-top:5px;">
+            </div>
+
+            <!-- NẮM BẮT THẢO LUẬN 1: Loại vỏ cách điện (Chỉ hiện khi là Hạ thế) -->
+            <div id="insulation_group" class="form-group hidden">
+                <label>Loại dây dẫn Hạ thế (Dây bị cảm ứng)</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="insulation_type" value="insulated" checked> Cáp cách điện (CVV, XLPE...)</label>
+                    <label><input type="radio" name="insulation_type" value="bare"> Dây trần</label>
+                </div>
+                <span class="help-text">Nếu là cáp cách điện hạ thế, chúng có thể đi sát nhau an toàn về mặt tĩnh điện.</span>
             </div>
 
             <!-- 2. Dòng tải (Dây 1) -->
             <div class="form-group">
-                <label for="current">Dòng tải pha (A)</label>
-                <input type="number" id="current" name="current" step="1" min="0" required placeholder="Nhập dòng điện (ví dụ: 400)">
+                <label for="current">Dòng tải pha max (A)</label>
+                <input type="number" id="current" name="current" step="1" min="1" required placeholder="Nhập dòng (ví dụ: 400)">
             </div>
 
-            <!-- 3. Khoảng cách (D) -->
+            <!-- NẮM BẮT THẢO LUẬN 2: Khoảng cách (D) và Hướng dẫn Giá trị hợp lệ -->
             <div class="form-group">
                 <label for="distance">Khoảng cách giữa tâm hai dây (D - mét)</label>
                 <input type="number" id="distance" name="distance" step="0.01" min="0.01" required placeholder="Nhập khoảng cách (ví dụ: 1.0)">
+                
+                <!-- Phần hướng dẫn giá trị hợp lệ -->
+                <div id="distance_guide_box" class="distance-guide hidden">
+                    <strong>Giá trị hợp lệ (Khoảng cách an toàn tối thiểu theo quy định VN):</strong>
+                    <p class="help-text" style="margin-bottom:0;">Bạn không được nhập nhỏ hơn giá trị này để tránh phóng điện trực tiếp.</p>
+                    <ul id="distance_guide_list">
+                        <!-- JavaScript sẽ điền nội dung vào đây -->
+                    </ul>
+                </div>
             </div>
 
-            <!-- 4. Chiều dài song song (L) -->
+            <!-- 3. Chiều dài song song (L) -->
             <div class="form-group">
                 <label for="length">Chiều dài song song (L - mét)</label>
-                <input type="number" id="length" name="length" step="1" min="0.01" required placeholder="Nhập chiều dài (ví dụ: 2000)">
+                <input type="number" id="length" name="length" step="1" min="1" required placeholder="Nhập chiều dài (ví dụ: 2000)">
             </div>
 
-            <!-- 5. Trạng thái không khí -->
+            <!-- 4. Trạng thái không khí -->
             <div class="form-group">
                 <label for="weather">Trạng thái không khí</label>
                 <select id="weather" name="weather">
-                    <option value="1.0" selected>Trưa nắng ráo (Mặc định - 100% k)</option>
-                    <option value="0.7">Trời mưa ẩm (70% k - Tăng cảm ứng tĩnh điện)</option>
-                    <option value="0.8">Buổi sáng nhiều sương (80% k)</option>
+                    <option value="1.0" selected>Trưa nắng ráo (Mặc định)</option>
+                    <option value="0.7">Trời mưa ẩm (Tăng cảm ứng tĩnh điện)</option>
+                    <option value="0.8">Buổi sáng nhiều sương</option>
                 </select>
             </div>
 
-            <button type="submit">Tính toán</button>
+            <button type="submit">Tính toán & Kiểm tra An toàn</button>
         </form>
 
         <!-- Phần hiển thị kết quả -->
         <div id="result" class="hidden">
-            <h3 style="text-align:center;">Kết quả Tạm Tính</h3>
+            <h3 class="result-title">Kết quả Tạm Tính & Cảnh báo</h3>
             
-            <div class="result-item">
-                <span class="result-label">Cấp Điện Áp Pha Nguồn ($U_1$):</span>
-                <span id="res_voltage_pha"></span> V (AC)
-            </div>
-
-            <!-- 1. Kết quả Cảm ứng tĩnh điện (Do Điện áp) -->
-            <div class="result-item" style="border-bottom: 1px solid #ccc; padding-bottom:10px;">
-                <span class="result-label">1. Điện Áp Cảm Ứng Tĩnh Điện ($U_{ce}$):</span><br>
-                <span style="font-size:1.2em;" id="res_uce"></span> V<br>
-                <span class="result-label">Đánh giá an toàn (Tĩnh điện):</span>
-                <span id="warn_uce"></span><br>
-                <i>(Nếu đứng dưới đất chạm vào dây rỗng, bạn sẽ chịu điện áp này)</i>
+            <!-- NẮM BẮT THẢO LUẬN 1: Bỏ qua Tĩnh điện Hạ thế nếu cách điện -->
+            <div class="result-item" id="uce_result_box" style="border-bottom: 1px solid #ccc; padding-bottom:15px;">
+                <span class="result-label">1. Cảm Ứng Tĩnh Điện (Do Điện Áp):</span><br>
+                Điện áp nguồn pha-đất ước tính ($U_1$): <span id="res_voltage_pha"></span> V<br>
+                Điện áp cảm ứng tĩnh điện chạm phải ($U_{ce}$): <span style="font-size:1.3em;" id="res_uce"></span> V<br>
+                <div id="uce_warning" class="warning-box"></div>
             </div>
 
             <!-- 2. Kết quả Cảm ứng từ (Do Dòng điện) -->
             <div class="result-item" style="padding-top:10px;">
-                <span class="result-label">2. Điện Áp Cảm Ứng Từ ($U_{cu}$):</span><br>
-                <span style="font-size:1.2em;" id="res_ucu"></span> V<br>
-                <span class="result-label">Đánh giá an toàn (Từ thế):</span>
-                <span id="warn_ucu"></span><br>
-                <i>(Nếu dây bị hở mạch, hiệu điện thế giữa hai đầu dây là trị số này)</i>
+                <span class="result-label">2. Cảm Ứng Từ Thế (Do Dòng Điện):</span><br>
+                Điện áp cảm ứng tích lũy ($U_{cu}$): <span style="font-size:1.3em;" id="res_ucu"></span> V<br>
+                <div id="ucu_warning" class="warning-box"></div>
             </div>
             
-            <p style="font-size:0.9em; color:#666; margin-top:20px; border-top:1px solid #ccc; padding-top:10px;">
-                <strong>Lưu ý:</strong> Công thức trên chỉ là ước tính tạm thời cho 1 pha, chưa tính đến sự triệt tiêu của 3 pha và sự nối đất của các dây lân cận. Trong thực tế trung thế/cao thế, kết quả sẽ thấp hơn, nhưng **luôn luôn** phải thực hiện nối đất an toàn trước khi sửa chữa.
+            <p style="font-size:0.9em; color:#666; margin-top:20px; border-top:1px solid #ccc; padding-top:10px; font-style: italic;">
+                <strong>Lưu ý quan trọng:</strong> Kết quả trên là ước tính tạm thời. Trong thực tế (hệ thống 3 pha), cảm ứng sẽ thấp hơn. Tuy nhiên, <strong>luôn luôn</strong> phải thực hiện nối đất an toàn dây bị cảm ứng trước khi chạm vào, bất kể cấp điện áp nào.
             </p>
         </div>
     </div>
 
     <script>
-        // Hàm ẩn/hiện ô nhập điện áp tùy chọn
+        // Bảng giá trị khoảng cách an toàn tối thiểu (m)
+        const safeDistances = {
+            "0.22": 0.3, // Hạ thế dây trần
+            "22": 1.0,
+            "35": 1.0,
+            "110": 1.5,
+            "220": 2.5,
+            "500": 4.5
+        };
+
         function toggleCustomVoltage() {
             var select = document.getElementById('voltage_source');
             var customVoltageInput = document.getElementById('custom_voltage');
+            var insulationGroup = document.getElementById('insulation_group');
+
+            // Ẩn/hiện ô nhập kV tùy chọn
             if (select.value === 'custom') {
                 customVoltageInput.classList.remove('hidden');
                 customVoltageInput.required = true;
@@ -175,11 +151,46 @@
                 customVoltageInput.classList.add('hidden');
                 customVoltageInput.required = false;
             }
+
+            // NẮM BẮT THẢO LUẬN 1: Hiện chọn cách điện CHỈ khi là Hạ thế
+            if (select.value === '0.22') {
+                insulationGroup.classList.remove('hidden');
+            } else {
+                insulationGroup.classList.add('hidden');
+            }
         }
 
-        // Hàm xử lý khi người dùng nhấn nút Tính
+        // NẮM BẮT THẢO LUẬN 2: Cập nhật Bảng hướng dẫn khoảng cách hợp lệ
+        function updateDistanceGuide() {
+            var select = document.getElementById('voltage_source');
+            var guideBox = document.getElementById('distance_guide_box');
+            var guideList = document.getElementById('distance_guide_list');
+            
+            guideList.innerHTML = ''; // Xóa nội dung cũ
+
+            if (select.value && select.value !== 'custom') {
+                guideBox.classList.remove('hidden');
+                var v = select.value;
+                var d = safeDistances[v];
+                
+                var vText = select.options[select.selectedIndex].text;
+                var li = document.createElement('li');
+                li.innerHTML = `Với cấp <strong>${vText}</strong>, khoảng cách $D$ hợp lệ phải <strong>$\ge$ ${d} mét</strong>.`;
+                guideList.appendChild(li);
+                
+                // Thêm lưu ý về tính nhẩm an toàn
+                var liGuide = document.createElement('li');
+                liGuide.style.fontStyle = 'italic';
+                liGuide.innerHTML = `Để giảm cảm ứng hiệu quả, nên chọn $D \ge ${d + 0.5}$ mét.`;
+                guideList.appendChild(liGuide);
+
+            } else {
+                guideBox.classList.add('hidden');
+            }
+        }
+
         document.getElementById('calcForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Ngăn chặn tải lại trang
+            event.preventDefault();
 
             // 1. Thu thập dữ liệu
             var voltageSelect = document.getElementById('voltage_source').value;
@@ -194,70 +205,81 @@
             var distance = parseFloat(document.getElementById('distance').value);
             var length = parseFloat(document.getElementById('length').value);
             var weatherFactor = parseFloat(document.getElementById('weather').value);
+            var insulationType = document.querySelector('input[name="insulation_type"]:checked').value;
 
-            // Kiểm tra tính hợp lệ cơ bản
             if (!voltageKV || !current || !distance || !length) {
                 alert("Vui lòng điền đầy đủ thông tin.");
                 return;
             }
 
+            // NẮM BẮT THẢO LUẬN 2: Kiểm tra khoảng cách có hợp lệ không (nhỏ hơn mức tối thiểu)
+            if (voltageSelect !== 'custom' && safeDistances[voltageSelect]) {
+                if (distance < safeDistances[voltageSelect]) {
+                    alert(`QUÁ NGUY HIỂM: Khoảng cách ${distance}m nhỏ hơn mức an toàn tối thiểu ${safeDistances[voltageSelect]}m của cấp điện áp này. Nguy cơ phóng điện trực tiếp!`);
+                    document.getElementById('distance').focus();
+                    return;
+                }
+            }
+
             // 2. Các hằng số tạm tính
-            var baseK_electrostatic = 0.05; // k_base = 0.05m cho khoảng cách 1m (ước tính)
-            var baseK_magnetic = 0.00002;  // K_base cho cảm ứng từ (0.00002 V/A/m)
+            var baseK_electrostatic = 0.05; 
+            var baseK_magnetic = 0.00002; 
+            var resultBox = document.getElementById('result');
+            var uceResultBox = document.getElementById('uce_result_box');
 
             // 3. Tính toán
 
-            // --- A. Phần Cảm ứng tĩnh điện (Do Điện áp $U_1$) ---
+            // --- A. Phần Cảm ứng tĩnh điện ---
             var voltageV_source = voltageKV * 1000;
-            // Điện áp pha-đất ước tính (bỏ qua triệt tiêu 3 pha)
             var U1_phaV = Math.round(voltageV_source / Math.sqrt(3));
-
-            // Hiệu chỉnh k theo thời tiết
             var finalK_electrostatic = baseK_electrostatic * weatherFactor;
-
-            // Công thức tĩnh điện: U_ce = U_1 * k / (D + k)
-            var Uce = U1_phaV * finalK_electrostatic / (distance + finalK_electrostatic);
-            Uce = Math.round(Uce);
-
-            // --- B. Phần Cảm ứng từ thế (Do Dòng điện $I$) ---
-            // Hiệu chỉnh K từ (phụ thuộc vào D, K giảm đi theo hàm logarit, nhưng để tạm tính ta lấy K giảm tỉ lệ nghịch nhẹ)
-            // K_magnetic = K_base / (D nếu D > baseD_1m), nhưng để tính nhẩm nhanh tạm lấy K_base
-            var K_magnetic_cal = baseK_magnetic;
-
-            // Công thức từ: U_cu = K * I * L
-            var Ucu = K_magnetic_cal * current * length;
-            Ucu = Math.round(Ucu * 10) / 10; // Làm tròn 1 chữ số thập phân
-
-            // 4. Hiển thị kết quả
-            document.getElementById('result').classList.remove('hidden');
             
+            // NẮM BẮT THẢO LUẬN 1: Logic Hạ thế + Cách điện = 0V Tĩnh điện
+            var Uce = 0;
+            var skipUceReason = "";
+
+            if (voltageSelect === '0.22' && insulationType === 'insulated') {
+                Uce = 0;
+                skipUceReason = "Đã bỏ qua cảm ứng tĩnh điện vì cáp hạ thế có vỏ cách điện an toàn khi tiếp xúc.";
+            } else {
+                Uce = U1_phaV * finalK_electrostatic / (distance + finalK_electrostatic);
+                Uce = Math.round(Uce);
+            }
+
+            // --- B. Phần Cảm ứng từ thế ---
+            var Ucu = baseK_magnetic * current * length;
+            Ucu = Math.round(Ucu * 10) / 10;
+
+            // 4. Hiển thị kết quả & Cảnh báo
+            resultBox.classList.remove('hidden');
+            
+            // Hiện thị Uce
             document.getElementById('res_voltage_pha').innerText = U1_phaV.toLocaleString('vi-VN');
-            
-            // Cập nhật Uce và cảnh báo
             document.getElementById('res_uce').innerText = Uce.toLocaleString('vi-VN');
-            if (Uce >= 100) {
-                document.getElementById('warn_uce').innerText = "Rất nguy hiểm! Nguy cơ điện giật chết người.";
-                document.getElementById('warn_uce').className = "warning";
-            } else if (Uce >= 30) {
-                document.getElementById('warn_uce').innerText = "Nguy hiểm! Cảm giác giật mạnh, không an toàn.";
-                document.getElementById('warn_uce').className = "warning";
+            
+            var uceWarningBox = document.getElementById('uce_warning');
+            if (skipUceReason) {
+                uceWarningBox.innerHTML = `<span class="safe-text">${skipUceReason}</span>`;
             } else {
-                document.getElementById('warn_uce').innerText = "Có thể an toàn (nhưng luôn nối đất).";
-                document.getElementById('warn_uce').className = "safe";
+                if (Uce >= 100) {
+                    uceWarningBox.innerHTML = `<span class="warning-text">RẤT NGUY HIỂM! Nguy cơ điện giật chết người.</span><br>Bạn đứng dưới đất chạm vào dây sẽ chịu điện áp này. PHẢI NỐI ĐẤT.`;
+                } else if (Uce >= 30) {
+                    uceWarningBox.innerHTML = `<span class="warning-text">Nguy hiểm!</span> Cảm giác giật mạnh, ngưỡng không an toàn.`;
+                } else {
+                    uceWarningBox.innerHTML = `<span class="safe-text">Thấp, ngưỡng an toàn.</span>`;
+                }
             }
 
-            // Cập nhật Ucu và cảnh báo
+            // Hiển thị Ucu
             document.getElementById('res_ucu').innerText = Ucu.toLocaleString('vi-VN');
+            var ucuWarningBox = document.getElementById('ucu_warning');
             if (Ucu >= 30) {
-                document.getElementById('warn_ucu').innerText = "Nguy hiểm! Điện áp hở mạch cao hơn ngưỡng an toàn.";
-                document.getElementById('warn_ucu').className = "warning";
+                ucuWarningBox.innerHTML = `<span class="warning-text">Nguy hiểm!</span> Điện áp hở mạch giữa hai đầu dây vượt ngưỡng an toàn. PHẢI NỐI ĐẤT ĐỂ TRIỆT TIÊU.`;
             } else {
-                document.getElementById('warn_ucu').innerText = "Khá thấp, thường không nguy hiểm lập tức.";
-                document.getElementById('warn_ucu').className = "safe";
+                ucuWarningBox.innerHTML = `<span class="safe-text">Thấp, ngưỡng an toàn.</span>`;
             }
 
-            // Di chuyển màn hình xuống phần kết quả
-            document.getElementById('result').scrollIntoView();
+            resultBox.scrollIntoView();
         });
     </script>
 </body>
